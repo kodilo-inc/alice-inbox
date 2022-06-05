@@ -134,20 +134,20 @@ module.exports.handler = async (event, context) => {
     }
 
 
-    // Miro стрелка "Первый раз с устройства без экрана" https://miro.com/app/board/o9J_ldpPWOU=/?moveToWidget=3074457364215212991&cot=14
+    // Miro стрелка "Первый раз с устройства без экрана" https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420502&cot=14
     if (!hasScreen) {
       response.text = INITIAL_WITHOUT_SCREEN_TXT;
       return { version, session, response };
     }
 
-    // MIRO стрелка: "Первый раз. С устройства с экраном" https://miro.com/app/board/o9J_ldpPWOU=/?moveToWidget=3074457364215027652&cot=14
+    // MIRO стрелка: "Первый раз. С устройства с экраном" https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420500&cot=14
     if (session.new) {
       return getInitialWithScreenResponse();
     }
 
-    // Пользователь пришёл отсюда https://miro.com/app/board/o9J_ldpPWOU=/?moveToWidget=3074457364214922267&cot=14
+    // Пользователь пришёл отсюда https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420499&cot=14
     if (previousStep === INITIAL_STEP) {
-      // https://miro.com/app/board/o9J_ldpPWOU=/?moveToWidget=3074457364215382360&cot=14
+      // https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420506&cot=14
       if (userTells === YES) {
         response.text = HERE_INSTRUCTION_TXT;
         response.buttons = [
@@ -162,14 +162,14 @@ module.exports.handler = async (event, context) => {
         };
         return { version, session, response, session_state };
       }
-      // https://miro.com/app/board/o9J_ldpPWOU=/?moveToWidget=3074457364218739833&cot=14
+      // https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420540&cot=14
       return getInitialWithScreenResponse();
     }
 
-    // Пользователь пришёл отсюда: https://miro.com/app/board/o9J_ldpPWOU=/?moveToWidget=3074457364215382366&cot=14
-    // или отсюда: https://miro.com/app/board/o9J_ldpPWOU=/?moveToWidget=3074457364215598058&cot=14
-    // или отсюда https://miro.com/app/board/o9J_ldpPWOU=/?moveToWidget=3074457364216865822&cot=14
-    // вот сюда https://miro.com/app/board/o9J_ldpPWOU=/?moveToWidget=3074457364215598058&cot=14
+    // Пользователь пришёл отсюда: https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420505&cot=14
+    // или отсюда: https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420507&cot=14
+    // или отсюда https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420514&cot=14
+    // вот сюда https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420507&cot=14
     if (
       previousStep === HERE_INSTRUCTION_STEP ||
       previousStep === SETTING_UP_TOKEN_AND_ID_STEP ||
@@ -178,10 +178,10 @@ module.exports.handler = async (event, context) => {
       return getIsItTokenStep();
     }
 
-    // Пользователь пришёл отсюда https://miro.com/app/board/o9J_ldpPWOU=/?moveToWidget=3074457364215598058&cot=14
+    // Пользователь пришёл отсюда https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420507&cot=14
     if (previousStep === IS_IT_TOKEN_STEP) {
       if (userTells === YES) {
-        // https://miro.com/app/board/o9J_ldpPWOU=/?moveToWidget=3074457364217301284&cot=14
+        // https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420518&cot=14
         if (articleId) {
           response.text = TOKEN_SAVED_SETTING_UP_FINISHED;
           const session_state = {
@@ -201,7 +201,7 @@ module.exports.handler = async (event, context) => {
             user_state_update,
           };
         }
-        // https://miro.com/app/board/o9J_ldpPWOU=/?moveToWidget=3074457364216759463&cot=14
+        // https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420511&cot=14
         response.text = TOKEN_SAVED_TXT;
         const session_state = {
           previousStep: TOKEN_SAVED_STEP,
@@ -215,11 +215,11 @@ module.exports.handler = async (event, context) => {
         return { version, session, response, session_state, user_state_update };
       }
       if (userTells === NO_ITS_ID) {
-        // https://miro.com/app/board/o9J_ldpPWOU=/?moveToWidget=3074457364554156131&cot=14
+        // https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420541&cot=14
         if (token) {
           return getArticleIdSavedSettingUpFinishedResponse();
         }
-        // https://miro.com/app/board/o9J_ldpPWOU=/?moveToWidget=3074457364216865735&cot=14
+        // https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420515&cot=14
         response.text = ARTICLE_ID_SAVED_TXT;
         const session_state = {
           previousStep: ARTICLE_ID_SAVED_STEP,
@@ -231,17 +231,17 @@ module.exports.handler = async (event, context) => {
         return { version, session, response, session_state, user_state_update };
       }
 
-      // https://miro.com/app/board/o9J_ldpPWOU=/?moveToWidget=3074457364216618317&cot=14
+      // https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420509&cot=14
       return getIsItTokenStep();
     }
 
-    // Пользователь пришёл отсюда: https://miro.com/app/board/o9J_ldpPWOU=/?moveToWidget=3074457364216759466&cot=14
+    // Пользователь пришёл отсюда: https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420510&cot=14
     if (previousStep === TOKEN_SAVED_STEP) {
       return getIsItArticleIdStep();
     }
-    // Пользователь пришёл отсюда: https://miro.com/app/board/o9J_ldpPWOU=/?moveToWidget=3074457364216759557&cot=14
+    // Пользователь пришёл отсюда: https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420512&cot=14
     if (previousStep === IS_IT_ARTICLE_ID_STEP) {
-      // https://miro.com/app/board/o9J_ldpPWOU=/?moveToWidget=3074457364605135373&cot=14
+      // https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420542&cot=14
       if (userTells === NO_ITS_TOKEN) {
         response.text = TOKEN_SAVED_TXT;
         const session_state = {
@@ -255,7 +255,7 @@ module.exports.handler = async (event, context) => {
 
         return { version, session, response, session_state, user_state_update };
       }
-      // https://miro.com/app/board/o9J_ldpPWOU=/?moveToWidget=3074457364217394216&cot=14
+      // https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420522&cot=14
       if (userTells === YES) {
         return getArticleIdSavedSettingUpFinishedResponse();
       }
