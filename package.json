@@ -1,0 +1,23 @@
+{
+  "name": "yandex-alice",
+  "version": "1.0.0",
+  "description": "cloud functions for integrate Alice with Notion",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "yandex",
+    "alice",
+    "serverless",
+    "cloud",
+    "functions",
+    "aws"
+  ],
+  "author": "novitckas",
+  "license": "ISC",
+  "dependencies": {
+    "@notionhq/client": "^1.0.4",
+    "node-fetch": "^2.6.7"
+  }
+}
