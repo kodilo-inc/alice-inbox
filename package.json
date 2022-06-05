@@ -1,7 +1,7 @@
 {
   "name": "yandex-alice",
   "version": "1.0.0",
-  "description": "cloud functions for integrate Alice with Notion",
+  "description": "cloud function for integration Alice with Notion",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

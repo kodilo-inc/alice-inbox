@@ -2,16 +2,12 @@ const { Client } = require("@notionhq/client");
 const {
   HELP_TXT,
   HELP_TXT_DURING_SETTING_UP,
-  INITIAL_WITH_SCREEN_TXT,
   INITIAL_WITHOUT_SCREEN_TXT,
   INITIAL_AFTER_RESET_TXT,
   HERE_INSTRUCTION_TXT,
-  IS_IT_TOKEN_TXT,
-  IS_IT_ARTICLE_ID_TXT,
   TOKEN_SAVED_TXT,
   ARTICLE_ID_SAVED_TXT,
   TOKEN_SAVED_SETTING_UP_FINISHED,
-  ARTICLE_ID_SAVED_SETTING_UP_FINISHED,
   YES,
   NO,
   INSTRUCTION,
@@ -19,38 +15,24 @@ const {
   NO_ITS_TOKEN,
 } = require("./texts");
 
-const INITIAL_STEP = 0;
-const HERE_INSTRUCTION_STEP = 1;
-const SETTING_UP_TOKEN_AND_ID_STEP = 2;
-const IS_IT_TOKEN_STEP = 3;
-const TOKEN_SAVED_STEP = 4;
-const ARTICLE_ID_SAVED_STEP = 5;
-const IS_IT_ARTICLE_ID_STEP = 6;
+const {
+  INITIAL_STEP,
+  HERE_INSTRUCTION_STEP,
+  SETTING_UP_TOKEN_AND_ID_STEP,
+  IS_IT_TOKEN_STEP,
+  TOKEN_SAVED_STEP,
+  ARTICLE_ID_SAVED_STEP,
+  IS_IT_ARTICLE_ID_STEP,
+} = require("./constants");
+const {
+  getIsItArticleIdStep,
+  getIsItTokenStep,
+  getInitialWithScreenResponse,
+  getArticleIdSavedSettingUpFinishedResponse,
+  addToList,
+} = require("./functions");
 
-const addToList = (notion, item, articleId) => {
-  return notion.blocks.children.append({
-    block_id: articleId,
-    children: [
-      {
-        object: "block",
-        type: "to_do",
-        to_do: {
-          rich_text: [
-            {
-              type: "text",
-              text: {
-                content: item,
-              },
-            },
-          ],
-          checked: false,
-        },
-      },
-    ],
-  });
-};
-
-module.exports.handler = async (event, context) => {
+module.exports.handler = async (event) => {
   const { request, session, version, meta, state } = event;
   let response = {};
   const stateSession = state && state.session;
@@ -110,7 +92,7 @@ module.exports.handler = async (event, context) => {
 
     // MIRO стрелка: "Первый раз. С устройства с экраном" https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420500&cot=14
     if (session.new) {
-      return getInitialWithScreenResponse();
+      return getInitialWithScreenResponse(event, response);
     }
 
     // Пользователь пришёл отсюда https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420499&cot=14
@@ -131,7 +113,7 @@ module.exports.handler = async (event, context) => {
         return { version, session, response, session_state };
       }
       // https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420540&cot=14
-      return getInitialWithScreenResponse();
+      return getInitialWithScreenResponse(event, response);
     }
 
     // Пользователь пришёл отсюда: https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420505&cot=14
@@ -143,7 +125,7 @@ module.exports.handler = async (event, context) => {
       previousStep === SETTING_UP_TOKEN_AND_ID_STEP ||
       previousStep === ARTICLE_ID_SAVED_STEP
     ) {
-      return getIsItTokenStep();
+      return getIsItTokenStep(event, response, userTells);
     }
 
     // Пользователь пришёл отсюда https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420507&cot=14
@@ -185,7 +167,11 @@ module.exports.handler = async (event, context) => {
       if (userTells === NO_ITS_ID) {
         // https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420541&cot=14
         if (token) {
-          return getArticleIdSavedSettingUpFinishedResponse();
+          return getArticleIdSavedSettingUpFinishedResponse(
+            event,
+            response,
+            userTellsOnPreviousStep
+          );
         }
         // https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420515&cot=14
         response.text = ARTICLE_ID_SAVED_TXT;
@@ -200,12 +186,12 @@ module.exports.handler = async (event, context) => {
       }
 
       // https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420509&cot=14
-      return getIsItTokenStep();
+      return getIsItTokenStep(event, response, userTells);
     }
 
     // Пользователь пришёл отсюда: https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420510&cot=14
     if (previousStep === TOKEN_SAVED_STEP) {
-      return getIsItArticleIdStep();
+      return getIsItArticleIdStep(event, response, userTells);
     }
     // Пользователь пришёл отсюда: https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420512&cot=14
     if (previousStep === IS_IT_ARTICLE_ID_STEP) {
@@ -225,61 +211,15 @@ module.exports.handler = async (event, context) => {
       }
       // https://miro.com/app/board/uXjVOvE1DVc=/?moveToWidget=3458764526870420522&cot=14
       if (userTells === YES) {
-        return getArticleIdSavedSettingUpFinishedResponse();
+        return getArticleIdSavedSettingUpFinishedResponse(
+          event,
+          response,
+          userTellsOnPreviousStep
+        );
       }
 
-      return getIsItArticleIdStep();
+      return getIsItArticleIdStep(event, response, userTells);
     }
-  }
-
-  function getIsItArticleIdStep() {
-    response.text = IS_IT_ARTICLE_ID_TXT;
-    response.buttons = [
-      { title: YES, hide: true },
-      { title: NO_ITS_TOKEN, hide: true },
-    ];
-    const session_state = {
-      previousStep: IS_IT_ARTICLE_ID_STEP,
-      previousVal: userTells,
-    };
-    return { version, session, response, session_state };
-  }
-
-  function getIsItTokenStep() {
-    response.text = IS_IT_TOKEN_TXT;
-    response.buttons = [
-      { title: YES, hide: true },
-      { title: NO_ITS_ID, hide: true },
-    ];
-    const session_state = {
-      previousStep: IS_IT_TOKEN_STEP,
-      previousVal: userTells,
-    };
-    return { version, session, response, session_state };
-  }
-
-  function getInitialWithScreenResponse() {
-    response.text = INITIAL_WITH_SCREEN_TXT;
-    response.buttons = [
-      { title: YES, hide: true },
-      { title: NO, hide: true },
-    ];
-    const session_state = {
-      previousStep: INITIAL_STEP,
-    };
-    return { version, session, response, session_state };
-  }
-
-  function getArticleIdSavedSettingUpFinishedResponse() {
-    response.text = ARTICLE_ID_SAVED_SETTING_UP_FINISHED;
-    const session_state = {
-      previousStep: null,
-      previousVal: null,
-    };
-    const user_state_update = {
-      id: userTellsOnPreviousStep,
-    };
-    return { version, session, response, session_state, user_state_update };
   }
 
   // Пример быстрого запуска навыка: "Алиса, попроси {название навыка} {входные данные для навыка}".
