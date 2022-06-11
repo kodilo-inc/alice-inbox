@@ -79,8 +79,8 @@ function getTitlePropertyName(notion, databaseId) {
   });
 }
 
-function isDatabase(notion, pageId) {
-  return notion.databases.retrieve({database_id: pageId}).then(() => {
+function isDatabase(notion, databaseId) {
+  return notion.databases.retrieve({database_id: databaseId}).then(() => {
       return true;
   }, (error) => {
       if(error.code === APIErrorCode.ObjectNotFound) {
@@ -119,9 +119,9 @@ const addToList = (notion, item, listId) => {
   })
 }
 
-const addToPage = (notion, item, articleId) => {
+const addToPage = (notion, item, pageId) => {
   return notion.blocks.children.append({
-    block_id: articleId,
+    block_id: pageId,
     children: [
       {
         object: "block",
