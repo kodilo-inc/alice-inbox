@@ -72,7 +72,54 @@ function getArticleIdSavedSettingUpFinishedResponse(
   return { version, session, response, session_state, user_state_update };
 }
 
-const addToList = (notion, item, articleId) => {
+function getTitlePropertyName(notion, databaseId) {
+  return notion.databases.retrieve({ database_id: databaseId }).then((response) => {
+      const titleProp = Object.keys(response.properties).find(item => response.properties[item].type === 'title');
+      return titleProp;
+  });
+}
+
+function isDatabase(notion, pageId) {
+  return notion.databases.retrieve({database_id: pageId}).then(() => {
+      return true;
+  }, (error) => {
+      if(error.code === APIErrorCode.ObjectNotFound) {
+          return false;
+      }
+
+      throw error;
+  })
+}
+
+function isPage(notion, pageId) {
+  return notion.pages.retrieve({page_id: pageId}).then(() => {
+      return true;
+  }, (error) => {
+      if(error.code === APIErrorCode.ObjectNotFound) {
+          return false;
+      }
+
+      throw error;
+  })
+}
+
+const addToList = (notion, item, listId) => {
+  isDatabase(notion, listId).then((result) => {
+      if(result) {
+          addToDatabase(notion, item, listId);
+      } else {
+          isPage(notion, listId).then((result) => {
+              if (result) {
+                  addToPage(notion, item, listId);
+              } else {
+                  throw new Error('Список не найден');
+              }
+          })  
+      }
+  })
+}
+
+const addToPage = (notion, item, articleId) => {
   return notion.blocks.children.append({
     block_id: articleId,
     children: [
@@ -94,6 +141,29 @@ const addToList = (notion, item, articleId) => {
     ],
   });
 };
+
+const addToDatabase = (notion, item, databaseId) => {
+  return getTitlePropertyName(notion, databaseId).then(propertyName => {
+      return notion.pages.create({
+          parent: {
+              database_id: databaseId,
+          },
+          properties: {
+              [propertyName]: {
+                type: 'title',
+                title: [
+                  {
+                    type: 'text',
+                    text: {
+                      content: item,
+                    },
+                  },
+                ],
+              },
+          }
+      });
+  });
+}
 
 module.exports = {
   getIsItArticleIdStep,
