@@ -1,3 +1,5 @@
+const { APIErrorCode } = require("@notionhq/client");
+
 const {
   IS_IT_ARTICLE_ID_TXT,
   YES,
@@ -104,13 +106,13 @@ function isPage(notion, pageId) {
 }
 
 const addToList = (notion, item, listId) => {
-  isDatabase(notion, listId).then((result) => {
+  return isDatabase(notion, listId).then((result) => {
       if(result) {
-          addToDatabase(notion, item, listId);
+          return addToDatabase(notion, item, listId);
       } else {
-          isPage(notion, listId).then((result) => {
+          return isPage(notion, listId).then((result) => {
               if (result) {
-                  addToPage(notion, item, listId);
+                  return addToPage(notion, item, listId);
               } else {
                   throw new Error('Список не найден');
               }
