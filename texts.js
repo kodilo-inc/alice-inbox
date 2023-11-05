@@ -1,5 +1,6 @@
 // Фразы активации навыка
 const nameForSkillToLaunchList = ['добавить в мой список', 'добавить в список', 'добавить список'];
+const ACTIVATION_PHRASE = 'попроси';
 
 // Диалоги
 const HELP_TXT =
@@ -71,5 +72,6 @@ module.exports = {
   INSTRUCTION,
   NO_ITS_ID,
   NO_ITS_TOKEN,
+  ACTIVATION_PHRASE,
   nameForSkillToStartList: nameForSkillToLaunchList
 };

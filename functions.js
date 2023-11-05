@@ -75,51 +75,61 @@ function getArticleIdSavedSettingUpFinishedResponse(
 }
 
 function getTitlePropertyName(notion, databaseId) {
-  return notion.databases.retrieve({ database_id: databaseId }).then((response) => {
-      const titleProp = Object.keys(response.properties).find(item => response.properties[item].type === 'title');
+  return notion.databases
+    .retrieve({ database_id: databaseId })
+    .then((response) => {
+      const titleProp = Object.keys(response.properties).find(
+        (item) => response.properties[item].type === "title"
+      );
       return titleProp;
-  });
+    });
 }
 
 function isDatabase(notion, databaseId) {
-  return notion.databases.retrieve({database_id: databaseId}).then(() => {
+  return notion.databases.retrieve({ database_id: databaseId }).then(
+    () => {
       return true;
-  }, (error) => {
-      if(error.code === APIErrorCode.ObjectNotFound) {
-          return false;
+    },
+    (error) => {
+      if (error.code === APIErrorCode.ObjectNotFound) {
+        return false;
       }
 
       throw error;
-  })
+    }
+  );
 }
 
 function isPage(notion, pageId) {
-  return notion.pages.retrieve({page_id: pageId}).then(() => {
+  return notion.pages.retrieve({ page_id: pageId }).then(
+    () => {
       return true;
-  }, (error) => {
-      if(error.code === APIErrorCode.ObjectNotFound) {
-          return false;
+    },
+    (error) => {
+      if (error.code === APIErrorCode.ObjectNotFound) {
+        return false;
       }
 
       throw error;
-  })
+    }
+  );
 }
 
 const addToList = (notion, item, listId) => {
   return isDatabase(notion, listId).then((result) => {
-      if(result) {
-          return addToDatabase(notion, item, listId);
-      } else {
-          return isPage(notion, listId).then((result) => {
-              if (result) {
-                  return addToPage(notion, item, listId);
-              } else {
-                  throw new Error('Список не найден');
-              }
-          })  
-      }
-  })
-}
+    if (result) {
+      return addToDatabase(notion, item, listId);
+    } else {
+      return isPage(notion, listId).then((result) => {
+        if (result) {
+          return addToPage(notion, item, listId);
+        } else {
+          throw new Error("Список не найден");
+        }
+      });
+    }
+  });
+};
 
 const addToPage = (notion, item, pageId) => {
   return notion.blocks.children.append({
@@ -145,27 +155,27 @@ const addToPage = (notion, item, pageId) => {
 };
 
 const addToDatabase = (notion, item, databaseId) => {
-  return getTitlePropertyName(notion, databaseId).then(propertyName => {
-      return notion.pages.create({
-          parent: {
-              database_id: databaseId,
-          },
-          properties: {
-              [propertyName]: {
-                type: 'title',
-                title: [
-                  {
-                    type: 'text',
-                    text: {
-                      content: item,
-                    },
-                  },
-                ],
+  return getTitlePropertyName(notion, databaseId).then((propertyName) => {
+    return notion.pages.create({
+      parent: {
+        database_id: databaseId,
+      },
+      properties: {
+        [propertyName]: {
+          type: "title",
+          title: [
+            {
+              type: "text",
+              text: {
+                content: item,
               },
-          }
-      });
+            },
+          ],
+        },
+      },
+    });
   });
-}
+};
 
 module.exports = {
   getIsItArticleIdStep,

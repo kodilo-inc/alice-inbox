@@ -13,7 +13,8 @@ const {
   INSTRUCTION,
   NO_ITS_ID,
   NO_ITS_TOKEN,
-  nameForSkillToStartList
+  ACTIVATION_PHRASE,
+  nameForSkillToStartList,
 } = require("./texts");
 
 const {
@@ -38,16 +39,24 @@ module.exports.handler = async (event) => {
   let response = {};
   const stateSession = state && state.session;
   const stateUser = state && state.user;
-  const launchPhraseUserUsed = nameForSkillToStartList.filter((i) => request.original_utterance.toLowerCase().startsWith(`попроси ${i}`))[0]
-  const isUserMessageStartWithLaunchPhrase = !!launchPhraseUserUsed
-  const userTells = isUserMessageStartWithLaunchPhrase ? request.original_utterance.slice(launchPhraseUserUsed.length + 8) : request.original_utterance;
+  const launchPhraseUserUsed = nameForSkillToStartList.filter((i) =>
+    request.original_utterance
+      .toLowerCase()
+      .startsWith(`${ACTIVATION_PHRASE} ${i}`)
+  )[0];
+  const isUserMessageStartWithLaunchPhrase = !!launchPhraseUserUsed;
+  const userTells = isUserMessageStartWithLaunchPhrase
+    ? request.original_utterance.slice(
+        launchPhraseUserUsed.length + ACTIVATION_PHRASE.length + 1
+      )
+    : request.original_utterance;
   const userTellsInLowerCase = userTells.toLowerCase();
   const previousStep = stateSession && stateSession.previousStep;
   const userTellsOnPreviousStep = stateSession && stateSession.previousVal;
   const token = stateUser && stateUser.token;
   const articleId = stateUser && stateUser.id;
   const hasScreen = meta.interfaces.screen;
-  
+
   if (userTells === "reset") {
     response.text = INITIAL_AFTER_RESET_TXT;
     response.buttons = [
@@ -228,7 +237,9 @@ module.exports.handler = async (event) => {
 
   // Пример быстрого запуска навыка: "Алиса, попроси {название навыка} {входные данные для навыка}".
   // Алиса запустит навык и сразу передаст в него входные параметры.
-  const isFastSkillCall = request.original_utterance && session.new || isUserMessageStartWithLaunchPhrase;
+  const isFastSkillCall =
+    (request.original_utterance && session.new) ||
+    isUserMessageStartWithLaunchPhrase;
 
   response.end_session = isFastSkillCall; // После быстрого запуска сразу завершаем навык. Несколько раз было неожиданно, что воспользовался навыком.
   // Через 5 минут ставлю таймер, а я, оказывается, всё еще в навыке.
