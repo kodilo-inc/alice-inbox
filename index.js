@@ -13,6 +13,7 @@ const {
   INSTRUCTION,
   NO_ITS_ID,
   NO_ITS_TOKEN,
+  nameForSkillToStartList
 } = require("./texts");
 
 const {
@@ -37,13 +38,16 @@ module.exports.handler = async (event) => {
   let response = {};
   const stateSession = state && state.session;
   const stateUser = state && state.user;
-  const userTells = request.original_utterance;
+  const launchPhraseUserUsed = nameForSkillToStartList.filter((i) => request.original_utterance.toLowerCase().startsWith(`попроси ${i}`))[0]
+  const isUserMessageStartWithLaunchPhrase = !!launchPhraseUserUsed
+  const userTells = isUserMessageStartWithLaunchPhrase ? request.original_utterance.slice(launchPhraseUserUsed.length + 8) : request.original_utterance;
+  const userTellsInLowerCase = userTells.toLowerCase();
   const previousStep = stateSession && stateSession.previousStep;
   const userTellsOnPreviousStep = stateSession && stateSession.previousVal;
   const token = stateUser && stateUser.token;
   const articleId = stateUser && stateUser.id;
   const hasScreen = meta.interfaces.screen;
-
+  
   if (userTells === "reset") {
     response.text = INITIAL_AFTER_RESET_TXT;
     response.buttons = [
@@ -62,7 +66,7 @@ module.exports.handler = async (event) => {
     };
     return { version, session, response, session_state, user_state_update };
   }
-  if (userTells.toLowerCase() === "покажи настройки") {
+  if (userTellsInLowerCase === "покажи настройки") {
     response.text = `Токен: ${token}\n\nid-заметки: ${articleId}`;
     const session_state = {
       previousStep,
@@ -73,8 +77,8 @@ module.exports.handler = async (event) => {
   // Навык НЕ настроен (отсутствуют токен и id заметки).
   if (!token || !articleId) {
     if (
-      userTells.toLowerCase() === "помощь" ||
-      userTells.toLowerCase().includes("что ты умеешь")
+      userTellsInLowerCase === "помощь" ||
+      userTellsInLowerCase.includes("что ты умеешь")
     ) {
       response.text = HELP_TXT_DURING_SETTING_UP;
       response.buttons = [{ title: YES, hide: true }];
@@ -224,13 +228,13 @@ module.exports.handler = async (event) => {
 
   // Пример быстрого запуска навыка: "Алиса, попроси {название навыка} {входные данные для навыка}".
   // Алиса запустит навык и сразу передаст в него входные параметры.
-  const isFastSkillCall = request.original_utterance && session.new;
+  const isFastSkillCall = request.original_utterance && session.new || isUserMessageStartWithLaunchPhrase;
 
   response.end_session = isFastSkillCall; // После быстрого запуска сразу завершаем навык. Несколько раз было неожиданно, что воспользовался навыком.
   // Через 5 минут ставлю таймер, а я, оказывается, всё еще в навыке.
   if (
-    userTells.toLowerCase() === "помощь" ||
-    userTells.toLowerCase().includes("что ты умеешь")
+    userTellsInLowerCase === "помощь" ||
+    userTellsInLowerCase.includes("что ты умеешь")
   ) {
     response.text = HELP_TXT;
     const session_state = {
@@ -248,9 +252,9 @@ module.exports.handler = async (event) => {
     auth: token,
   });
 
-  return addToList(notion, request.original_utterance, articleId)
+  return addToList(notion, userTells, articleId)
     .then(() => {
-      response.text = `Добавила ${request.original_utterance} в список`;
+      response.text = `Добавила ${userTells} в список`;
       return { version, session, response };
     })
     .catch((error) => {

@@ -1,3 +1,6 @@
+// Фразы активации навыка
+const nameForSkillToLaunchList = ['добавить в мой список', 'добавить в список', 'добавить список'];
+
 // Диалоги
 const HELP_TXT =
   "Через меня можно голосом наполнять списки в Notion.\n" +
@@ -68,4 +71,5 @@ module.exports = {
   INSTRUCTION,
   NO_ITS_ID,
   NO_ITS_TOKEN,
+  nameForSkillToStartList: nameForSkillToLaunchList
 };

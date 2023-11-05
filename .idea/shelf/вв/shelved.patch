@@ -1,0 +1,119 @@
+Index: functions.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>const {\n  IS_IT_ARTICLE_ID_TXT,\n  YES,\n  NO_ITS_TOKEN,\n  IS_IT_TOKEN_TXT,\n  NO_ITS_ID,\n  INITIAL_WITH_SCREEN_TXT,\n  NO,\n  ARTICLE_ID_SAVED_SETTING_UP_FINISHED,\n} = require(\"./texts\");\nconst {\n  IS_IT_ARTICLE_ID_STEP,\n  IS_IT_TOKEN_STEP,\n  INITIAL_STEP,\n} = require(\"./constants\");\n\nconst getIsItArticleIdStep = (event, response, userTells) => {\n  const { session, version } = event;\n  response.text = IS_IT_ARTICLE_ID_TXT;\n  response.buttons = [\n    { title: YES, hide: true },\n    { title: NO_ITS_TOKEN, hide: true },\n  ];\n  const session_state = {\n    previousStep: IS_IT_ARTICLE_ID_STEP,\n    previousVal: userTells,\n  };\n  return { version, session, response, session_state };\n};\n\nfunction getIsItTokenStep(event, response, userTells) {\n  const { version, session } = event;\n  response.text = IS_IT_TOKEN_TXT;\n  response.buttons = [\n    { title: YES, hide: true },\n    { title: NO_ITS_ID, hide: true },\n  ];\n  const session_state = {\n    previousStep: IS_IT_TOKEN_STEP,\n    previousVal: userTells,\n  };\n  return { version, session, response, session_state };\n}\n\nfunction getInitialWithScreenResponse(event, response) {\n  const { session, version } = event;\n  response.text = INITIAL_WITH_SCREEN_TXT;\n  response.buttons = [\n    { title: YES, hide: true },\n    { title: NO, hide: true },\n  ];\n  const session_state = {\n    previousStep: INITIAL_STEP,\n  };\n  return { version, session, response, session_state };\n}\n\nfunction getArticleIdSavedSettingUpFinishedResponse(\n  event,\n  response,\n  userTellsOnPreviousStep\n) {\n  const { session, version } = event;\n  response.text = ARTICLE_ID_SAVED_SETTING_UP_FINISHED;\n  const session_state = {\n    previousStep: null,\n    previousVal: null,\n  };\n  const user_state_update = {\n    id: userTellsOnPreviousStep,\n  };\n  return { version, session, response, session_state, user_state_update };\n}\n\nconst addToList = (notion, item, articleId) => {\n  return notion.blocks.children.append({\n    block_id: articleId,\n    children: [\n      {\n        object: \"block\",\n        type: \"to_do\",\n        to_do: {\n          rich_text: [\n            {\n              type: \"text\",\n              text: {\n                content: item,\n              },\n            },\n          ],\n          checked: false,\n        },\n      },\n    ],\n  });\n};\n\nmodule.exports = {\n  getIsItArticleIdStep,\n  getIsItTokenStep,\n  getInitialWithScreenResponse,\n  getArticleIdSavedSettingUpFinishedResponse,\n  addToList,\n};\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/functions.js b/functions.js
+--- a/functions.js	(revision 17b69b2538ff571c7c25a17182c4ebac8b028a26)
++++ b/functions.js	(date 1655196747570)
+@@ -13,6 +13,7 @@
+   IS_IT_TOKEN_STEP,
+   INITIAL_STEP,
+ } = require("./constants");
++const { APIErrorCode } = require("@notionhq/client");
+ 
+ const getIsItArticleIdStep = (event, response, userTells) => {
+   const { session, version } = event;
+@@ -72,9 +73,68 @@
+   return { version, session, response, session_state, user_state_update };
+ }
+ 
+-const addToList = (notion, item, articleId) => {
++function getTitlePropertyName(notion, databaseId) {
++  return notion.databases
++    .retrieve({ database_id: databaseId })
++    .then((response) => {
++      const titleProp = Object.keys(response.properties).find(
++        (item) => response.properties[item].type === "title"
++      );
++      return titleProp;
++    });
++}
++
++function isDatabase(notion, databaseId) {
++  return notion.databases.retrieve({ database_id: databaseId }).then(
++    () => {
++      console.log('databaseId', databaseId);
++      return true;
++    },
++    (error) => {
++      if (error.code === APIErrorCode.ObjectNotFound) {
++        return false;
++      }
++
++      throw error;
++    }
++  );
++}
++
++function isPage(notion, pageId) {
++  return notion.pages.retrieve({ page_id: pageId }).then(
++    () => {
++      return true;
++    },
++    (error) => {
++      if (error.code === APIErrorCode.ObjectNotFound) {
++        return false;
++      }
++
++      throw error;
++    }
++  );
++}
++
++const addToList = (notion, item, listId) => {
++  return isDatabase(notion, listId).then((result) => {
++    console.log("isDatabase result", result);
++    if (result) {
++      return addToDatabase(notion, item, listId);
++    } else {
++      return isPage(notion, listId).then((result) => {
++        if (result) {
++          return addToPage(notion, item, listId);
++        } else {
++          throw new Error("Список не найден");
++        }
++      });
++    }
++  });
++};
++
++const addToPage = (notion, item, pageId) => {
+   return notion.blocks.children.append({
+-    block_id: articleId,
++    block_id: pageId,
+     children: [
+       {
+         object: "block",
+@@ -95,6 +155,29 @@
+   });
+ };
+ 
++const addToDatabase = (notion, item, databaseId) => {
++  return getTitlePropertyName(notion, databaseId).then((propertyName) => {
++    return notion.pages.create({
++      parent: {
++        database_id: databaseId,
++      },
++      properties: {
++        [propertyName]: {
++          type: "title",
++          title: [
++            {
++              type: "text",
++              text: {
++                content: item,
++              },
++            },
++          ],
++        },
++      },
++    });
++  });
++};
++
+ module.exports = {
+   getIsItArticleIdStep,
+   getIsItTokenStep,
