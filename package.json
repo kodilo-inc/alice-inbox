@@ -17,7 +17,7 @@
   "author": "novitckas",
   "license": "ISC",
   "dependencies": {
-    "@notionhq/client": "^2.2.10",
+    "@notionhq/client": "^2.2.15",
     "node-fetch": "^2.6.7"
   },
   "devDependencies": {

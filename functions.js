@@ -100,34 +100,12 @@ function isDatabase(notion, databaseId) {
   );
 }
 
-function isPage(notion, pageId) {
-  return notion.pages.retrieve({ page_id: pageId }).then(
-    () => {
-      return true;
-    },
-    (error) => {
-      if (error.code === APIErrorCode.ObjectNotFound) {
-        return false;
-      }
-
-      throw error;
-    }
-  );
-}
-
 const addToList = (notion, item, listId) => {
   return isDatabase(notion, listId).then((result) => {
     if (result) {
       return addToDatabase(notion, item, listId);
-    } else {
-      return isPage(notion, listId).then((result) => {
-        if (result) {
-          return addToPage(notion, item, listId);
-        } else {
-          throw new Error("Список не найден");
-        }
-      });
     }
+    return addToPage(notion, item, listId);
   });
 };
 
