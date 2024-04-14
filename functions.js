@@ -109,6 +109,45 @@ const addToList = (notion, item, listId) => {
   });
 };
 
+const showList = (notion, listId) => {
+  return isDatabase(notion, listId).then((result) => {
+    if (result) {
+      return showListFromDatabaseFirstColumn(notion, listId);
+    }
+    return showListOnPage(notion, listId);
+  });
+};
+
+const showListFromDatabaseFirstColumn = (notion, databaseId) => {
+  return notion.databases
+    .query({ database_id: databaseId, filter_properties: ["title"] })
+    .then((response) => {
+      const listInArray = response.results
+        .map((item) => {
+          const text = Object.values(item?.properties)?.[0].title?.[0]
+            ?.plain_text;
+          if (text) {
+            return `* ${text}`;
+          }
+          return;
+        })
+        .filter(Boolean);
+      return listInArray.join("\n");
+    });
+};
+
+const showListOnPage = (notion, pageId) => {
+  return notion.blocks.children.list({ block_id: pageId }).then((response) => {
+    const rows = response.results
+      .filter((item) => item.type === "to_do" && !item.to_do.checked)
+      .map((item) => {
+        const title = item.to_do.rich_text[0].plain_text;
+        return `* ${title}`;
+      });
+    return rows.join("\n");
+  });
+};
+
 const addToPage = (notion, item, pageId) => {
   return notion.blocks.children.append({
     block_id: pageId,
@@ -161,4 +200,5 @@ module.exports = {
   getInitialWithScreenResponse,
   getArticleIdSavedSettingUpFinishedResponse,
   addToList,
+  showList,
 };

@@ -32,6 +32,7 @@ const {
   getInitialWithScreenResponse,
   getArticleIdSavedSettingUpFinishedResponse,
   addToList,
+  showList,
 } = require("./functions");
 
 module.exports.handler = async (event) => {
@@ -56,6 +57,9 @@ module.exports.handler = async (event) => {
   const token = stateUser && stateUser.token;
   const articleId = stateUser && stateUser.id;
   const hasScreen = meta.interfaces.screen;
+  const notion = new Client({
+    auth: token,
+  });
 
   if (userTells === "reset") {
     response.text = INITIAL_AFTER_RESET_TXT;
@@ -235,6 +239,13 @@ module.exports.handler = async (event) => {
     }
   }
 
+  if (userTellsInLowerCase === "покажи список") {
+    return showList(notion, articleId).then((list) => {
+      response.text = list;
+      return { version, session, response };
+    });
+  }
+
   // Пример быстрого запуска навыка: "Алиса, попроси {название навыка} {входные данные для навыка}".
   // Алиса запустит навык и сразу передаст в него входные параметры.
   const isFastSkillCall =
@@ -259,9 +270,6 @@ module.exports.handler = async (event) => {
     response.tts = "Скажи , что добавить в ноушн";
     return { version, session, response };
   }
-  const notion = new Client({
-    auth: token,
-  });
 
   return addToList(notion, userTells, articleId)
     .then(() => {
