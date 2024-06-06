@@ -118,6 +118,15 @@ const showList = (notion, listId) => {
   });
 };
 
+const deleteItem = (notion, listId, text) => {
+  return isDatabase(notion, listId).then((result) => {
+    if (result) {
+      return null;
+    }
+    return deleteItemFormListByText(notion, listId, text);
+  });
+};
+
 const showListFromDatabaseFirstColumn = (notion, databaseId) => {
   return notion.databases
     .query({ database_id: databaseId, filter_properties: ["title"] })
@@ -145,6 +154,22 @@ const showListOnPage = (notion, pageId) => {
         return `* ${title}`;
       });
     return rows.join("\n");
+  });
+};
+
+const deleteItemFormListByText = (notion, pageId, text) => {
+  return notion.blocks.children.list({ block_id: pageId }).then((response) => {
+    const rows = response.results
+      .filter((item) => item.type === "to_do" && !item.to_do.checked)
+      .filter(
+        (item) =>
+          item.to_do.rich_text[0].plain_text.toLowerCase().trim() ===
+          text.toLowerCase().trim()
+      );
+    if (rows.length === 0) {
+      return null;
+    }
+    return notion.blocks.delete({ block_id: rows[0].id });
   });
 };
 
@@ -201,4 +226,6 @@ module.exports = {
   getArticleIdSavedSettingUpFinishedResponse,
   addToList,
   showList,
+  deleteItemFormListByText,
+  deleteItem,
 };

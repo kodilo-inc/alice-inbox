@@ -33,6 +33,7 @@ const {
   getArticleIdSavedSettingUpFinishedResponse,
   addToList,
   showList,
+  deleteItem,
 } = require("./functions");
 
 module.exports.handler = async (event) => {
@@ -242,6 +243,17 @@ module.exports.handler = async (event) => {
   if (userTellsInLowerCase === "покажи список") {
     return showList(notion, articleId).then((list) => {
       response.text = list;
+      return { version, session, response };
+    });
+  }
+
+  if (userTellsInLowerCase.includes("удали из списка")) {
+    const whatToDelete = userTellsInLowerCase.split("удали из списка ")[1];
+    return deleteItem(notion, articleId, whatToDelete).then((isDeleted) => {
+      response.text =
+        isDeleted === null
+          ? `${whatToDelete} нет в вашем списке`
+          : `Удалила ${whatToDelete}`;
       return { version, session, response };
     });
   }
