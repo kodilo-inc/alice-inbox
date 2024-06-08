@@ -119,12 +119,38 @@ const showList = (notion, listId) => {
 };
 
 const deleteItem = (notion, listId, text) => {
-  return isDatabase(notion, listId).then((result) => {
-    if (result) {
-      return null;
-    }
-    return deleteItemFormListByText(notion, listId, text);
-  });
+  getTitlePropertyName(notion, listId)
+    .then((titleProp) => {
+      return notion.databases.query({
+        database_id: listId,
+        filter: {
+          property: titleProp,
+          title: {
+            equals: text,
+          },
+        },
+      });
+    })
+    .then((response) => {
+      // Проверка наличия страниц с указанным заголовком
+      if (response.results.length === 0) {
+        console.log("Строка с указанным заголовком не найдена.");
+        return null;
+      }
+
+      // Получение ID страницы
+      const pageId = response.results[0].id;
+
+      // Удаление страницы
+      return notion.pages.update({
+        page_id: pageId,
+        archived: true,
+      });
+    })
+    .catch(() => {
+      // если ошибка при удалении из таблицы, пытаемся удалить из списка
+      deleteItemFormListByText(notion, listId, text);
+    });
 };
 
 const showListFromDatabaseFirstColumn = (notion, databaseId) => {
@@ -226,6 +252,5 @@ module.exports = {
   getArticleIdSavedSettingUpFinishedResponse,
   addToList,
   showList,
-  deleteItemFormListByText,
   deleteItem,
 };
