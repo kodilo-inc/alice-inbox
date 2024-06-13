@@ -119,7 +119,7 @@ const showList = (notion, listId) => {
 };
 
 const deleteItem = (notion, listId, text) => {
-  getTitlePropertyName(notion, listId)
+  return getTitlePropertyName(notion, listId)
     .then((titleProp) => {
       return notion.databases.query({
         database_id: listId,
@@ -149,7 +149,7 @@ const deleteItem = (notion, listId, text) => {
     })
     .catch(() => {
       // если ошибка при удалении из таблицы, пытаемся удалить из списка
-      deleteItemFormListByText(notion, listId, text);
+      return deleteItemFormListByText(notion, listId, text);
     });
 };
 
