@@ -1,256 +1,77 @@
-const { APIErrorCode } = require("@notionhq/client");
-
-const {
-  IS_IT_ARTICLE_ID_TXT,
-  YES,
-  NO_ITS_TOKEN,
-  IS_IT_TOKEN_TXT,
-  NO_ITS_ID,
-  INITIAL_WITH_SCREEN_TXT,
-  NO,
-  ARTICLE_ID_SAVED_SETTING_UP_FINISHED,
-} = require("./texts");
-const {
-  IS_IT_ARTICLE_ID_STEP,
-  IS_IT_TOKEN_STEP,
-  INITIAL_STEP,
-} = require("./constants");
-
-const getIsItArticleIdStep = (event, response, userTells) => {
-  const { session, version } = event;
-  response.text = IS_IT_ARTICLE_ID_TXT;
-  response.buttons = [
-    { title: YES, hide: true },
-    { title: NO_ITS_TOKEN, hide: true },
-  ];
-  const session_state = {
-    previousStep: IS_IT_ARTICLE_ID_STEP,
-    previousVal: userTells,
-  };
-  return { version, session, response, session_state };
-};
-
-function getIsItTokenStep(event, response, userTells) {
-  const { version, session } = event;
-  response.text = IS_IT_TOKEN_TXT;
-  response.buttons = [
-    { title: YES, hide: true },
-    { title: NO_ITS_ID, hide: true },
-  ];
-  const session_state = {
-    previousStep: IS_IT_TOKEN_STEP,
-    previousVal: userTells,
-  };
-  return { version, session, response, session_state };
-}
+const { INITIAL_WITH_SCREEN_TXT, INSTRUCTION } = require("./texts");
 
 function getInitialWithScreenResponse(event, response) {
   const { session, version } = event;
   response.text = INITIAL_WITH_SCREEN_TXT;
-  response.buttons = [
-    { title: YES, hide: true },
-    { title: NO, hide: true },
-  ];
-  const session_state = {
-    previousStep: INITIAL_STEP,
-  };
-  return { version, session, response, session_state };
+  // TODO: вернуть кнопку, когда появится видос с инструкцией
+  // response.buttons = [
+  //   {
+  //     title: INSTRUCTION,
+  //     hide: false,
+  //     url: "https://kodilo.notion.site/e8da9e9e4b2545aaa163f56de7995973",
+  //   },
+  // ];
+  return { version, session, response };
 }
 
-function getArticleIdSavedSettingUpFinishedResponse(
-  event,
-  response,
-  userTellsOnPreviousStep
-) {
-  const { session, version } = event;
-  response.text = ARTICLE_ID_SAVED_SETTING_UP_FINISHED;
-  const session_state = {
-    previousStep: null,
-    previousVal: null,
-  };
-  const user_state_update = {
-    id: userTellsOnPreviousStep,
-  };
-  return { version, session, response, session_state, user_state_update };
-}
-
-function getTitlePropertyName(notion, databaseId) {
-  return notion.databases
-    .retrieve({ database_id: databaseId })
-    .then((response) => {
-      const titleProp = Object.keys(response.properties).find(
-        (item) => response.properties[item].type === "title"
-      );
-      return titleProp;
+const getColumnId = async (boardId, token) => {
+  return fetch(
+    `https://api.weeek.net/public/v1/tm/board-columns?boardId=${boardId}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    }
+  )
+    .then((response) => response.json())
+    .then((resp) => {
+      return resp.boardColumns[0].id;
     });
-}
+};
 
-function isDatabase(notion, databaseId) {
-  return notion.databases.retrieve({ database_id: databaseId }).then(
-    () => {
-      return true;
+const addToList = async (projectId, boardId, columnId, title, token) => {
+  const data = {
+    title,
+    projectId,
+    boardId,
+    boardColumnId: +columnId,
+    type: "action",
+  };
+  const response = await fetch("https://api.weeek.net/public/v1/tm/tasks", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     },
-    (error) => {
-      if (error.code === APIErrorCode.ObjectNotFound) {
-        return false;
-      }
+    body: JSON.stringify(data),
+  });
 
-      throw error;
-    }
-  );
+  return response.json();
+};
+
+// from a6808400-2582-40d7-8c8c-0add92d66b54,https://app.weeek.net/ws/580690/project/2/board/3 to []
+const extractSettings = (userTells) => {
+  const [token, url] = userTells.split(",");
+  let [projectId, boardId] = extractIds(url) || [];
+  return [token, projectId, boardId];
+};
+
+function extractIds(url) {
+  // Используем регулярное выражение для поиска подстроки 'project/<project_id>/board/<board_id>'
+  const regex = /project\/(\d+)\/board\/(\d+)/g;
+  let match = regex.exec(url);
+  if (match) {
+    return [parseInt(match[1], 10), parseInt(match[2], 10)];
+  } else {
+    return null;
+  }
 }
-
-const addToList = (notion, item, listId) => {
-  return isDatabase(notion, listId).then((result) => {
-    if (result) {
-      return addToDatabase(notion, item, listId);
-    }
-    return addToPage(notion, item, listId);
-  });
-};
-
-const showList = (notion, listId) => {
-  return isDatabase(notion, listId).then((result) => {
-    if (result) {
-      return showListFromDatabaseFirstColumn(notion, listId);
-    }
-    return showListOnPage(notion, listId);
-  });
-};
-
-const deleteItem = (notion, listId, text) => {
-  return getTitlePropertyName(notion, listId)
-    .then((titleProp) => {
-      return notion.databases.query({
-        database_id: listId,
-        filter: {
-          property: titleProp,
-          title: {
-            equals: text,
-          },
-        },
-      });
-    })
-    .then((response) => {
-      // Проверка наличия страниц с указанным заголовком
-      if (response.results.length === 0) {
-        console.log("Строка с указанным заголовком не найдена.");
-        return null;
-      }
-
-      // Получение ID страницы
-      const pageId = response.results[0].id;
-
-      // Удаление страницы
-      return notion.pages.update({
-        page_id: pageId,
-        archived: true,
-      });
-    })
-    .catch(() => {
-      // если ошибка при удалении из таблицы, пытаемся удалить из списка
-      return deleteItemFormListByText(notion, listId, text);
-    });
-};
-
-const showListFromDatabaseFirstColumn = (notion, databaseId) => {
-  return notion.databases
-    .query({ database_id: databaseId, filter_properties: ["title"] })
-    .then((response) => {
-      const listInArray = response.results
-        .map((item) => {
-          const text = Object.values(item?.properties)?.[0].title?.[0]
-            ?.plain_text;
-          if (text) {
-            return `* ${text}`;
-          }
-          return;
-        })
-        .filter(Boolean);
-      return listInArray.join("\n");
-    });
-};
-
-const showListOnPage = (notion, pageId) => {
-  return notion.blocks.children.list({ block_id: pageId }).then((response) => {
-    const rows = response.results
-      .filter((item) => item.type === "to_do" && !item.to_do.checked)
-      .map((item) => {
-        const title = item.to_do.rich_text[0].plain_text;
-        return `* ${title}`;
-      });
-    return rows.join("\n");
-  });
-};
-
-const deleteItemFormListByText = (notion, pageId, text) => {
-  return notion.blocks.children.list({ block_id: pageId }).then((response) => {
-    const rows = response.results
-      .filter((item) => item.type === "to_do" && !item.to_do.checked)
-      .filter(
-        (item) =>
-          item.to_do.rich_text[0].plain_text.toLowerCase().trim() ===
-          text.toLowerCase().trim()
-      );
-    if (rows.length === 0) {
-      return null;
-    }
-    return notion.blocks.delete({ block_id: rows[0].id });
-  });
-};
-
-const addToPage = (notion, item, pageId) => {
-  return notion.blocks.children.append({
-    block_id: pageId,
-    children: [
-      {
-        object: "block",
-        type: "to_do",
-        to_do: {
-          rich_text: [
-            {
-              type: "text",
-              text: {
-                content: item,
-              },
-            },
-          ],
-          checked: false,
-        },
-      },
-    ],
-  });
-};
-
-const addToDatabase = (notion, item, databaseId) => {
-  return getTitlePropertyName(notion, databaseId).then((propertyName) => {
-    return notion.pages.create({
-      parent: {
-        database_id: databaseId,
-      },
-      properties: {
-        [propertyName]: {
-          type: "title",
-          title: [
-            {
-              type: "text",
-              text: {
-                content: item,
-              },
-            },
-          ],
-        },
-      },
-    });
-  });
-};
 
 module.exports = {
-  getIsItArticleIdStep,
-  getIsItTokenStep,
   getInitialWithScreenResponse,
-  getArticleIdSavedSettingUpFinishedResponse,
   addToList,
-  showList,
-  deleteItem,
+  extractSettings,
+  getColumnId,
 };
