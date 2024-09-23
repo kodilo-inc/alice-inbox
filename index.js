@@ -51,6 +51,14 @@ module.exports.handler = async (event) => {
       previousVal: null,
     };
 
+    response.buttons = [
+      {
+        title: INSTRUCTION,
+        hide: false,
+        url: "https://rutube.ru/video/31ec9043503c09589d5a33c1d2948204/?r=wd&t=267",
+      },
+    ];
+
     const user_state_update = {
       token: null,
       projectId: null,

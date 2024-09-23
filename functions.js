@@ -3,14 +3,13 @@ const { INITIAL_WITH_SCREEN_TXT, INSTRUCTION } = require("./texts");
 function getInitialWithScreenResponse(event, response) {
   const { session, version } = event;
   response.text = INITIAL_WITH_SCREEN_TXT;
-  // TODO: вернуть кнопку, когда появится видос с инструкцией
-  // response.buttons = [
-  //   {
-  //     title: INSTRUCTION,
-  //     hide: false,
-  //     url: "https://kodilo.notion.site/e8da9e9e4b2545aaa163f56de7995973",
-  //   },
-  // ];
+  response.buttons = [
+    {
+      title: INSTRUCTION,
+      hide: false,
+      url: "https://rutube.ru/video/31ec9043503c09589d5a33c1d2948204/?r=wd&t=267",
+    },
+  ];
   return { version, session, response };
 }
 

@@ -37,7 +37,7 @@ const WRONG_SETTINGS_TXT =
   "Неправильно указаны настройки. Проверьте, что прислали в нужном формате и отправьте еще раз";
 
 // Кнопки
-const INSTRUCTION = "Инструкция";
+const INSTRUCTION = "Видео-инструкция";
 
 module.exports = {
   HELP_TXT,
